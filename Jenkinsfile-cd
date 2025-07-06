@@ -2,44 +2,29 @@ pipeline {
   agent any
 
   environment {
-    DOCKER_IMAGE = 'kiranitth/primevideo-app:latest'
-    CONTAINER_NAME = 'primevideo-app'
+    IMAGE = 'supersection/primevideo:latest'
   }
 
   stages {
-    stage('🛑 Stop & Remove Old Container') {
+    stage('Checkout') {
       steps {
-        script {
-          sh """
-            docker ps -q --filter "name=$CONTAINER_NAME" | grep -q . && \
-            docker stop $CONTAINER_NAME && \
-            docker rm $CONTAINER_NAME || echo "No existing container to stop."
-          """
-        }
+        git url: 'https://github.com/Manojkadali27/amazon-prime-video-devsecops.git'
       }
     }
 
-    stage('📥 Pull Docker Image from DockerHub') {
+    stage('Deploy to EKS') {
       steps {
-        echo "Pulling latest image: $DOCKER_IMAGE"
-        sh 'docker pull $DOCKER_IMAGE'
-      }
-    }
-
-    stage('🚀 Run New Docker Container') {
-      steps {
-        echo "Running container: $CONTAINER_NAME"
-        sh 'docker run -d --name $CONTAINER_NAME --restart unless-stopped -p 3000:3000 $DOCKER_IMAGE'
+        sh 'kubectl apply -f manifest.yml'
       }
     }
   }
 
   post {
     success {
-      echo '✅ Deployment successful.'
+      echo "✅ App successfully deployed to EKS"
     }
     failure {
-      echo '❌ Deployment failed.'
+      echo "❌ EKS deployment failed"
     }
   }
 }
